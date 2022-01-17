@@ -8,18 +8,21 @@ import sys
 class SouthXChange:
   name = "SouthXChange"
 
-  def __init__(self, pair):
+  def __init__(self, market1, market2):
     self.api_key = os.getenv("SOUTHXCHANGE_API_KEY")
     self.api_secret = bytes(os.getenv("SOUTHXCHANGE_SECRET"), "utf-8")
+
+    pair = market1 + "/" + market2
+    self.market1 = market1
+    self.market2 = market2
 
     self.base_url = "https://www.southxchange.com/api/v4/"
     self.book_url = "book/" + pair
     self.balance_url = "listBalances/"
     self.order_url = "placeOrder/"
 
-    #TODO: Should be pair1 and pair2, not just btc/scp
-    self.btc_balance = None
-    self.scp_balance = None
+    self.market1_balance = None
+    self.market2_balance = None
 
     self.current_book_buy_price = 0
     self.current_book_buy_amount = 0
@@ -41,16 +44,16 @@ class SouthXChange:
     print("Getting SouthXChange balance...")
     async with session.post(self.base_url + self.balance_url, json=json_data, headers=headers) as resp:
       wallet = await resp.json()
-      self.btc_balance = [b for b in wallet if b["Currency"] == "BTC"][0]["Available"]
-      self.scp_balance = [b for b in wallet if b["Currency"] == "SCP"][0]["Available"]
+      self.market1_balance = [b for b in wallet if b["Currency"] == self.market1][0]["Available"]
+      self.market2_balance = [b for b in wallet if b["Currency"] == self.market2][0]["Available"]
 
-      print("SouthXChange BTC balance is: " + str(self.btc_balance))
-      print("SouthXChange SCP balance is: " + str(self.scp_balance))
+      print("SouthXChange " + self.market1 + " balance is: " + str(self.market1_balance))
+      print("SouthXChange " + self.market2 + " balance is: " + str(self.market2_balance))
 
       return
 
   async def get_book(self, session):
-    if self.btc_balance == None or self.scp_balance == None:
+    if self.market1_balance == None or self.market2_balance == None:
       await self.get_balance(session)
       pass
 
@@ -76,8 +79,8 @@ class SouthXChange:
       "nonce": int(time.time() * 10),
       "key": self.api_key,
       "type": "buy",
-      "listingCurrency": "SCP",
-      "referenceCurrency": "BTC",
+      "listingCurrency": self.market1,
+      "referenceCurrency": self.market2,
       "amount": amount,
       "limitPrice": self.current_book_sell_price
     }
@@ -104,8 +107,8 @@ class SouthXChange:
       "nonce": int(time.time() * 10),
       "key": self.api_key,
       "type": "sell",
-      "listingCurrency": "SCP",
-      "referenceCurrency": "BTC",
+      "listingCurrency": self.market1,
+      "referenceCurrency": self.market2,
       "amount": amount,
       "limitPrice": self.current_book_buy_price
     }

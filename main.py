@@ -9,11 +9,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-#TODO: pair should be runtime argument
-pair = "SCP/BTC"
+market1 = sys.argv[1]
+market2 = sys.argv[2]
 
-sx = SouthXChange(pair)
-to = TradeOgre(pair)
+print("TRADING " + market1 + "/" + market2)
+
+sx = SouthXChange(market1, market2)
+to = TradeOgre(market1, market2)
 
 exchanges = [to, sx]
 

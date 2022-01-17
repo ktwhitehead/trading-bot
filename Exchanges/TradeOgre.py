@@ -9,18 +9,22 @@ PAIR_MAP = {
 class TradeOgre:
   name = "TradeOgre"
 
-  def __init__(self, pair):
+  def __init__(self, market1, market2):
     self.api_key = os.getenv("TRADEOGRE_API_KEY")
     self.api_secret = os.getenv("TRADEOGRE_API_SECRET")
 
+    self.pair = market1 + "/" + market2
+    self.market1 = market1
+    self.market2 = market2
+
     self.base_url = "https://tradeogre.com/api/v1/"
-    self.book_url = "orders/" + PAIR_MAP[pair]
+    self.book_url = "orders/" + PAIR_MAP[self.pair]
     self.balance_url = "account/balances"
     self.sell_url = "order/sell"
     self.buy_url = "order/buy"
 
-    self.btc_balance = None
-    self.scp_balance = None
+    self.market1_balance = None
+    self.market2_balance = None
 
     self.current_book_buy_price = 0
     self.current_book_buy_amount = 0
@@ -32,15 +36,15 @@ class TradeOgre:
     basic = aiohttp.BasicAuth(self.api_key, self.api_secret, encoding="utf-8")
     async with session.get(self.base_url + self.balance_url, auth=basic) as resp:
       wallet = await resp.json(content_type="text/html")
-      self.btc_balance = wallet["balances"]["BTC"]
-      self.scp_balance = wallet["balances"]["SCP"]
+      self.market1_balance = wallet["balances"][self.market1]
+      self.market2_balance = wallet["balances"][self.market2]
 
-      print("TradeOgre BTC balance is: " + str(self.btc_balance))
-      print("TradeOgre SCP balance is: " + str(self.scp_balance))
+      print("TradeOgre " + self.market1 + " balance is: " + str(self.market1_balance))
+      print("TradeOgre " + self.market2 + " balance is: " + str(self.market2_balance))
       return
 
   async def get_book(self, session):
-    if self.btc_balance == None or self.scp_balance == None:
+    if self.market1_balance == None or self.market2_balance == None:
       await self.get_balance(session)
       pass
 
@@ -62,7 +66,7 @@ class TradeOgre:
   async def buy_the_sell_price(self, amount, session):
     basic = aiohttp.BasicAuth(self.api_key, self.api_secret, encoding="utf-8")
     data = {
-      "market": (None, "BTC-SCP"),
+      "market": (None, PAIR_MAP[self.pair]),
       "quantity": (None, str(amount)),
       "price": (None, str("{:.9f}".format(self.current_book_sell_price))),
     }
@@ -86,7 +90,7 @@ class TradeOgre:
   async def sell_the_buy_price(self, amount, session):
     basic = aiohttp.BasicAuth(self.api_key, self.api_secret, encoding="utf-8")
     data = {
-      "market": (None, "BTC-SCP"),
+      "market": (None, PAIR_MAP[self.pair]),
       "quantity": (None, str(amount)),
       "price": (None, str("{:.9f}".format(self.current_book_buy_price)))
     }
