@@ -3,7 +3,8 @@ import aiohttp
 import sys
 
 PAIR_MAP = {
-  "SCP/BTC": "BTC-SCP"
+  "SCP/BTC": "BTC-SCP",
+  "RTM/BTC": "BTC-RTM"
 }
 
 class TradeOgre:
@@ -36,8 +37,8 @@ class TradeOgre:
     basic = aiohttp.BasicAuth(self.api_key, self.api_secret, encoding="utf-8")
     async with session.get(self.base_url + self.balance_url, auth=basic) as resp:
       wallet = await resp.json(content_type="text/html")
-      self.market1_balance = wallet["balances"][self.market1]
-      self.market2_balance = wallet["balances"][self.market2]
+      self.market1_balance = float(wallet["balances"][self.market1])
+      self.market2_balance = float(wallet["balances"][self.market2])
 
       print("TradeOgre " + self.market1 + " balance is: " + str(self.market1_balance))
       print("TradeOgre " + self.market2 + " balance is: " + str(self.market2_balance))

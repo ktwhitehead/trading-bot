@@ -47,8 +47,8 @@ class SouthXChange:
       self.market1_balance = [b for b in wallet if b["Currency"] == self.market1][0]["Available"]
       self.market2_balance = [b for b in wallet if b["Currency"] == self.market2][0]["Available"]
 
-      print("SouthXChange " + self.market1 + " balance is: " + str(self.market1_balance))
-      print("SouthXChange " + self.market2 + " balance is: " + str(self.market2_balance))
+      print("SouthXChange " + self.market1 + " balance is: " + "{:.9f}".format(self.market1_balance))
+      print("SouthXChange " + self.market2 + " balance is: " + "{:.9f}".format(self.market2_balance))
 
       return
 

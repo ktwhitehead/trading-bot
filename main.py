@@ -39,13 +39,17 @@ def determine_transaction_amount(buy_exchange, sell_exchange):
   print("Sell Price: " + "{:.9f}".format(buy_exchange["current_book_sell_price"]))
   print("Buy Price: " + "{:.9f}".format(sell_exchange["current_book_buy_price"]))
 
+  # Buy the sell on the buy exchange
+  buy_amount = buy_exchange["current_book_sell_amount"]
+  buy_price = buy_exchange["current_book_sell_price"]
+
+  # Sell the buy on the sell exchange
+  sell_amount = sell_exchange["current_book_buy_amount"]
   sell_price = sell_exchange["current_book_buy_price"]
 
-  buy_amount = buy_exchange["current_book_buy_amount"]
-  buy_price = buy_exchange["current_book_buy_price"]
-  sell_amount = sell_exchange["current_book_sell_amount"]
   amount = min(buy_amount, sell_amount, 10)
 
+  print("About to transact...")
   print("Buy Amount: " + str(buy_amount))
   print("Sell Amount: " + str(sell_amount))
   print("Amount to transact: " + str(amount))
@@ -53,7 +57,7 @@ def determine_transaction_amount(buy_exchange, sell_exchange):
   print("Possible estimated earnings...")
   print("{:.9f}".format((sell_price - buy_price) * min(buy_amount, sell_amount)))
 
-  if (buy_price * amount) > buy_exchange["exchange"].btc_balance:
+  if (buy_price * amount) > buy_exchange["exchange"].market2_balance:
     print("OK NOT ENOUGH BALANCE, EXITING")
     sys.exit()
 
@@ -72,7 +76,6 @@ async def main():
     exc2 = book_prices[1]
 
     if exc1["current_book_sell_price"] < exc2["current_book_buy_price"]:
-
       amount = determine_transaction_amount(exc1, exc2)
 
       if (amount < 1):
