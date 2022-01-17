@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import time
+import sys
 
 from Exchanges.SouthXChange import SouthXChange
 from Exchanges.TradeOgre import TradeOgre
@@ -16,14 +17,45 @@ to = TradeOgre(pair)
 
 exchanges = [to, sx]
 
-async def make_money(ex1, ex2, amount, session):
+async def make_money(buy_exchange, sell_exchange, amount, session):
   transactions = [
-    asyncio.ensure_future(ex1["exchange"].buy_the_sell_price(amount, session)),
-    asyncio.ensure_future(ex2["exchange"].sell_the_buy_price(amount, session))
+    asyncio.ensure_future(buy_exchange["exchange"].buy_the_sell_price(amount, session)),
+    asyncio.ensure_future(sell_exchange["exchange"].sell_the_buy_price(amount, session))
   ]
-  result = await asyncio.gather(*transactions)
+  await asyncio.gather(*transactions)
 
-  return result
+  update_balances = [
+    asyncio.ensure_future(buy_exchange["exchange"].get_balance(session)),
+    asyncio.ensure_future(sell_exchange["exchange"].get_balance(session))
+  ]
+  await asyncio.gather(*update_balances)
+
+  return
+
+def determine_transaction_amount(buy_exchange, sell_exchange):
+  print(buy_exchange["exchange"].name + "'s sell price is less than " + sell_exchange["exchange"].name + "'s buy price!")
+  print("Sell Price: " + "{:.9f}".format(buy_exchange["current_book_sell_price"]))
+  print("Buy Price: " + "{:.9f}".format(sell_exchange["current_book_buy_price"]))
+
+  sell_price = sell_exchange["current_book_buy_price"]
+
+  buy_amount = buy_exchange["current_book_buy_amount"]
+  buy_price = buy_exchange["current_book_buy_price"]
+  sell_amount = sell_exchange["current_book_sell_amount"]
+  amount = min(buy_amount, sell_amount, 10)
+
+  print("Buy Amount: " + str(buy_amount))
+  print("Sell Amount: " + str(sell_amount))
+  print("Amount to transact: " + str(amount))
+
+  print("Possible estimated earnings...")
+  print("{:.9f}".format((sell_price - buy_price) * min(buy_amount, sell_amount)))
+
+  if (buy_price * amount) > buy_exchange["exchange"].btc_balance:
+    print("OK NOT ENOUGH BALANCE, EXITING")
+    sys.exit()
+
+  return amount
 
 async def main():
   async with aiohttp.ClientSession() as session:
@@ -37,41 +69,26 @@ async def main():
     exc1 = book_prices[0]
     exc2 = book_prices[1]
 
-    #exc1 should = TO
-    #exc2 should be SX
     if exc1["current_book_sell_price"] < exc2["current_book_buy_price"]:
-      print("------------------------------------------------------------------------ 1")
-      print(exc1["exchange"].name + "'s sell price is less than " + exc2["exchange"].name + "'s buy price!")
-      print("Sell Price: " + str(exc1["current_book_sell_price"]))
-      print("Buy Price: " + str(exc2["current_book_buy_price"]))
 
-      #TODO: validate balances before making purchase
-      buy_amount = exc1["current_book_buy_amount"]
-      sell_amount = exc2["current_book_sell_amount"]
-      amount = min(buy_amount, sell_amount)
-      
-      print("Buy Amount: " + str(buy_amount))
-      print("Sell Amount: " + str(sell_amount))
-      print("Amount to transact: " + str(amount))
+      amount = determine_transaction_amount(exc1, exc2)
+
+      if (amount < 1):
+        print("Amount to transact < 1")
+        return
+
       await make_money(exc1, exc2, amount, session)
 
     if exc2["current_book_sell_price"] < exc1["current_book_buy_price"]:
-      print("------------------------------------------------------------------------ 2")
-      print(exc2["exchange"].name + "'s sell price is less than " + exc1["exchange"].name + "'s buy price!")
-      print("Sell Price: " + str(exc2["current_book_sell_price"]))
-      print("Buy Price: " + str(exc1["current_book_buy_price"]))
+      amount = determine_transaction_amount(exc2, exc1)
 
-      # validate balances before making purchase
-      buy_amount = exc2["current_book_buy_amount"]
-      sell_amount = exc1["current_book_sell_amount"]
-      amount = min(buy_amount, sell_amount)
-      
-      print("Buy Amount: " + str(buy_amount))
-      print("Sell Amount: " + str(sell_amount))
-      print("Amount to transact: " + str(amount))
+      if (amount < 1):
+        print("Amount to transact < 1")
+        return
+
       await make_money(exc2, exc1, amount, session)
 
-    time.sleep(2)
+    time.sleep(1)
 
 while True:
   asyncio.run(main())

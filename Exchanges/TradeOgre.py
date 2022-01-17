@@ -28,24 +28,21 @@ class TradeOgre:
     self.current_book_sell_amount = 0
 
   async def get_balance(self, session):
+    print("Getting TradeOgre balance...")
     basic = aiohttp.BasicAuth(self.api_key, self.api_secret, encoding="utf-8")
-    async with session.get(self.base_url + self.balance_url, auth=basic)
+    async with session.get(self.base_url + self.balance_url, auth=basic) as resp:
       wallet = await resp.json(content_type="text/html")
       self.btc_balance = wallet["balances"]["BTC"]
       self.scp_balance = wallet["balances"]["SCP"]
-      return wallet
+
+      print("TradeOgre BTC balance is: " + str(self.btc_balance))
+      print("TradeOgre SCP balance is: " + str(self.scp_balance))
+      return
 
   async def get_book(self, session):
     if self.btc_balance == None or self.scp_balance == None:
-      basic = aiohttp.BasicAuth(self.api_key, self.api_secret, encoding="utf-8")
-      print("Getting TradeOgre balance...")
-      async with session.get(self.base_url + self.balance_url, auth=basic) as resp:
-        wallet = await resp.json(content_type="text/html")
-        self.btc_balance = wallet["balances"]["BTC"]
-        self.scp_balance = wallet["balances"]["SCP"]
-        print("TradeOgre BTC balance is: " + self.btc_balance)
-        print("TradeOgre SCP balance is: " + self.scp_balance)
-        pass
+      await self.get_balance(session)
+      pass
 
     async with session.get(self.base_url + self.book_url) as resp:
       book = await resp.json(content_type="text/html")
@@ -53,12 +50,6 @@ class TradeOgre:
       self.current_book_buy_amount = float(list(book["buy"].items())[-1][1])
       self.current_book_sell_price = float(list(book["sell"].items())[0][0])
       self.current_book_sell_amount = float(list(book["sell"].items())[0][1])
-
-      # print("TradeOgre")
-      # print("BUY: " + str(current_book_buy_price))
-      # print("AMOUNT: " + str(current_book_buy_amount))
-      # print("SELL: " + str(current_book_sell_price))
-      # print("AMOUNT: " + str(current_book_sell_amount))
 
       return {
         "exchange": self,
@@ -78,12 +69,15 @@ class TradeOgre:
 
     async with session.post(self.base_url + self.buy_url, data=data, auth=basic) as resp:
       result = await resp.json(content_type="text/html")
-      print("KEATON TRADEOGRE")
-      print(result)
 
-      if result['success'] == False:
+      if result["success"] == False:
         print("KEATON FUUUUUUUK IDK, error is...")
         print(result["error"])
+        sys.exit()
+
+      if resp.status != 200:
+        print("TO: KEATON FUK")
+        print(result)
         sys.exit()
 
       print("TO: SUCCESSFULLY EXECUTED PURCHASE OF THE SELL PRICE!")
@@ -98,12 +92,15 @@ class TradeOgre:
     }
     async with session.post(self.base_url + self.sell_url, data=data, auth=basic) as resp:
       result = await resp.json(content_type="text/html")
-      print("KEATON TRADEOGRE")
-      print(result)
 
       if result['success'] == False:
         print("KEATON FUUUUUUUK IDK, error is...")
         print(result["error"])
+        sys.exit()
+
+      if resp.status != 200:
+        print("TO: KEATON FUK")
+        print(result)
         sys.exit()
 
       print("TO: SUCCESSFULLY EXECUTED SELL OF THE BUY PRICE!")
