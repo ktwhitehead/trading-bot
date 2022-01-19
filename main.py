@@ -19,7 +19,8 @@ to = TradeOgre(market1, market2)
 
 exchanges = [to, sx]
 
-async def make_money(buy_exchange, sell_exchange, amount, session):
+async def make_money(buy_exchange, sell_exchange, calcs, session):
+  amount = calcs["amount"]
   transactions = [
     asyncio.ensure_future(buy_exchange["exchange"].buy_the_sell_price(amount, session)),
     asyncio.ensure_future(sell_exchange["exchange"].sell_the_buy_price(amount, session))
@@ -47,7 +48,7 @@ def determine_transaction_amount(buy_exchange, sell_exchange):
   sell_amount = sell_exchange["current_book_buy_amount"]
   sell_price = sell_exchange["current_book_buy_price"]
 
-  amount = min(buy_amount, sell_amount, 10)
+  amount = min(buy_amount, sell_amount, 20)
 
   print("About to transact...")
   print("Buy Amount: " + str(buy_amount))
@@ -55,13 +56,28 @@ def determine_transaction_amount(buy_exchange, sell_exchange):
   print("Amount to transact: " + str(amount))
 
   print("Possible estimated earnings...")
-  print("{:.9f}".format((sell_price - buy_price) * min(buy_amount, sell_amount)))
+  possible_earnings = (sell_price - buy_price) * amount
+  print("{:.9f}".format(possible_earnings))
 
   if (buy_price * amount) > buy_exchange["exchange"].market2_balance:
     print("OK NOT ENOUGH BALANCE, EXITING")
     sys.exit()
 
-  return amount
+  return { "amount": amount, "possible_earnings": possible_earnings }
+
+def is_worth_transacting(calcs):
+  amount = calcs["amount"]
+  possible_earnings = calcs["possible_earnings"]
+
+  if (amount < 1):
+    print("Amount to transact < 1")
+    return False
+
+  if (possible_earnings < 0.0000116):
+    print("Not worth the exchange")
+    return False
+
+  return True
 
 async def main():
   async with aiohttp.ClientSession() as session:
@@ -76,22 +92,16 @@ async def main():
     exc2 = book_prices[1]
 
     if exc1["current_book_sell_price"] < exc2["current_book_buy_price"]:
-      amount = determine_transaction_amount(exc1, exc2)
+      calcs = determine_transaction_amount(exc1, exc2)
 
-      if (amount < 1):
-        print("Amount to transact < 1")
-        return
-
-      await make_money(exc1, exc2, amount, session)
+      if is_worth_transacting(calcs):
+        await make_money(exc1, exc2, calcs, session)
 
     if exc2["current_book_sell_price"] < exc1["current_book_buy_price"]:
-      amount = determine_transaction_amount(exc2, exc1)
+      calcs = determine_transaction_amount(exc2, exc1)
 
-      if (amount < 1):
-        print("Amount to transact < 1")
-        return
-
-      await make_money(exc2, exc1, amount, session)
+      if is_worth_transacting(calcs):
+        await make_money(exc2, exc1, calcs, session)
 
     time.sleep(1)
 

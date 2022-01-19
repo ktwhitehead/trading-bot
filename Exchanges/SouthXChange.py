@@ -59,7 +59,6 @@ class SouthXChange:
 
     async with session.get(self.base_url + self.book_url) as resp:
       book = await resp.json()
-      # current_book_buy_price = "{:.9f}".format(book["BuyOrders"][0]["Price"])
 
       self.current_book_buy_price = float(book["BuyOrders"][0]["Price"])
       self.current_book_buy_amount = float(book["BuyOrders"][0]["Amount"])
