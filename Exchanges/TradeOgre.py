@@ -50,7 +50,12 @@ class TradeOgre:
       pass
 
     async with session.get(self.base_url + self.book_url) as resp:
+      if resp.status != 200:
+        print("TO: da fuk")
+        print(resp)
+
       book = await resp.json(content_type="text/html")
+
       self.current_book_buy_price = float(list(book["buy"].items())[-1][0])
       self.current_book_buy_amount = float(list(book["buy"].items())[-1][1])
       self.current_book_sell_price = float(list(book["sell"].items())[0][0])

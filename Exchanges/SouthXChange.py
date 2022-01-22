@@ -58,6 +58,10 @@ class SouthXChange:
       pass
 
     async with session.get(self.base_url + self.book_url) as resp:
+      if resp.status != 200:
+        print("SX: da fuk")
+        print(resp)
+
       book = await resp.json()
 
       self.current_book_buy_price = float(book["BuyOrders"][0]["Price"])

@@ -7,6 +7,12 @@ from Exchanges.SouthXChange import SouthXChange
 from Exchanges.TradeOgre import TradeOgre
 from dotenv import load_dotenv
 
+MAX_TRANSACT_AMOUNT = 40
+MIN_EARNINGS_AMOUNT = 0.0000232
+
+# about $0.025 per share
+MIN_EARNINGS_PER_AMOUNT = 0.000000713
+
 load_dotenv()
 
 market1 = sys.argv[1]
@@ -48,7 +54,7 @@ def determine_transaction_amount(buy_exchange, sell_exchange):
   sell_amount = sell_exchange["current_book_buy_amount"]
   sell_price = sell_exchange["current_book_buy_price"]
 
-  amount = min(buy_amount, sell_amount, 20)
+  amount = min(buy_amount, sell_amount, MAX_TRANSACT_AMOUNT)
 
   print("About to transact...")
   print("Buy Amount: " + str(buy_amount))
@@ -59,21 +65,30 @@ def determine_transaction_amount(buy_exchange, sell_exchange):
   possible_earnings = (sell_price - buy_price) * amount
   print("{:.9f}".format(possible_earnings))
 
+  print("Earnings per amount...")
+  earnings_per_amount = possible_earnings / amount
+  print("{:.9f}".format(earnings_per_amount))
+
   if (buy_price * amount) > buy_exchange["exchange"].market2_balance:
     print("OK NOT ENOUGH BALANCE, EXITING")
     sys.exit()
 
-  return { "amount": amount, "possible_earnings": possible_earnings }
+  return { "amount": amount, "possible_earnings": possible_earnings, "earnings_per_amount": earnings_per_amount }
 
 def is_worth_transacting(calcs):
   amount = calcs["amount"]
   possible_earnings = calcs["possible_earnings"]
+  earnings_per_amount = calcs["earnings_per_amount"]
 
   if (amount < 1):
     print("Amount to transact < 1")
     return False
 
-  if (possible_earnings < 0.0000116):
+  # if (possible_earnings < MIN_EARNINGS_AMOUNT):
+  #   print("Not worth the exchange")
+  #   return False
+
+  if (earnings_per_amount < MIN_EARNINGS_PER_AMOUNT):
     print("Not worth the exchange")
     return False
 
@@ -103,7 +118,7 @@ async def main():
       if is_worth_transacting(calcs):
         await make_money(exc2, exc1, calcs, session)
 
-    time.sleep(1)
+    time.sleep(1.3)
 
 while True:
   asyncio.run(main())
