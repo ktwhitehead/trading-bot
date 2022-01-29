@@ -8,9 +8,11 @@ import sys
 class SouthXChange:
   name = "SouthXChange"
 
-  def __init__(self, market1, market2):
+  def __init__(self, market1, market2, twilio):
     self.api_key = os.getenv("SOUTHXCHANGE_API_KEY")
     self.api_secret = bytes(os.getenv("SOUTHXCHANGE_SECRET"), "utf-8")
+
+    self.twilio = twilio
 
     pair = market1 + "/" + market2
     self.market1 = market1
@@ -60,6 +62,7 @@ class SouthXChange:
     async with session.get(self.base_url + self.book_url) as resp:
       if resp.status != 200:
         print("SX: da fuk")
+        self.twilio.send_text("SX ERROR: " + str(resp.status))
         print(resp)
 
       book = await resp.json()
@@ -100,6 +103,7 @@ class SouthXChange:
       if resp.status != 200:
         print("SX: KEATON FUK")
         print(result)
+        self.twilio.send_text("SX ERROR: " + result)
         sys.exit()
 
       print("SX: SUCCESSFULLY EXECUTED PURCHASE OF THE SELL PRICE!")
@@ -128,6 +132,7 @@ class SouthXChange:
       if resp.status != 200:
         print("SX: KEATON FUK")
         print(result)
+        self.twilio.send_text("SX ERROR: " + result)
         sys.exit()
 
       print("SX: SUCCESSFULLY EXECUTED SELL OF THE BUY PRICE!")

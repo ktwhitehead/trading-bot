@@ -10,9 +10,11 @@ PAIR_MAP = {
 class TradeOgre:
   name = "TradeOgre"
 
-  def __init__(self, market1, market2):
+  def __init__(self, market1, market2, twilio):
     self.api_key = os.getenv("TRADEOGRE_API_KEY")
     self.api_secret = os.getenv("TRADEOGRE_API_SECRET")
+
+    self.twilio = twilio
 
     self.pair = market1 + "/" + market2
     self.market1 = market1
@@ -52,6 +54,7 @@ class TradeOgre:
     async with session.get(self.base_url + self.book_url) as resp:
       if resp.status != 200:
         print("TO: da fuk")
+        self.twilio.send_text("TO ERROR: " + str(resp.status))
         print(resp)
 
       book = await resp.json(content_type="text/html")
@@ -83,6 +86,7 @@ class TradeOgre:
       if result["success"] == False:
         print("KEATON FUUUUUUUK IDK, error is...")
         print(result["error"])
+        self.twilio.send_text("TO ERROR: " + result["error"])
         sys.exit()
 
       if resp.status != 200:
@@ -106,6 +110,7 @@ class TradeOgre:
       if result['success'] == False:
         print("KEATON FUUUUUUUK IDK, error is...")
         print(result["error"])
+        self.twilio.send_text("TO ERROR: " + result["error"])
         sys.exit()
 
       if resp.status != 200:
