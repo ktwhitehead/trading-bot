@@ -9,6 +9,7 @@ python-dotenv = "*"
 aiohttp = "*"
 asyncio = "*"
 twilio = "*"
+psycopg = {extras = ["binary"], version = "*"}
 
 [dev-packages]
 

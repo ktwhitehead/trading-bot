@@ -6,20 +6,29 @@ import sys
 from Exchanges.SouthXChange import SouthXChange
 from Exchanges.TradeOgre import TradeOgre
 from TwilioClient import TwilioClient
+from DBClient import DBClient
 from dotenv import load_dotenv
 
-MAX_TRANSACT_AMOUNT = 40
-MIN_EARNINGS_AMOUNT = 0.0000232
-# about $0.037 per share
-MIN_EARNINGS_PER_AMOUNT = 0.000001
+# SCP at 3169 satoshis
+# MAX_TRANSACT_AMOUNT = 40
+# MIN_EARNINGS_PER_AMOUNT = 0.0000014
+
+# RTM at 46 satoshis
+# MAX_TRANSACT_AMOUNT = 2760
+# MIN_EARNINGS_PER_AMOUNT = 0.00000002
+
+MAX_TRANSACT_AMOUNT = int(sys.argv[3])
+MIN_EARNINGS_PER_AMOUNT = float(sys.argv[4])
 
 load_dotenv()
 
 market1 = sys.argv[1]
 market2 = sys.argv[2]
-print("TRADING " + market1 + "/" + market2)
+pair = market1 + "/" + market2
+print("TRADING " + pair)
 
 twilio = TwilioClient()
+db = DBClient()
 
 sx = SouthXChange(market1, market2, twilio)
 to = TradeOgre(market1, market2, twilio)
@@ -27,11 +36,19 @@ exchanges = [to, sx]
 
 async def make_money(buy_exchange, sell_exchange, calcs, session):
   amount = calcs["amount"]
+
   transactions = [
     asyncio.ensure_future(buy_exchange["exchange"].buy_the_sell_price(amount, session)),
     asyncio.ensure_future(sell_exchange["exchange"].sell_the_buy_price(amount, session))
   ]
   await asyncio.gather(*transactions)
+
+  # log the transaction to db
+  buy_exchange_name = buy_exchange["exchange"].name
+  sell_exchange_name = sell_exchange["exchange"].name
+  buy_price = buy_exchange["current_book_sell_price"]
+  sell_price = sell_exchange["current_book_buy_price"]
+  db.insert_trade((pair, amount, buy_exchange_name, sell_exchange_name, buy_price, sell_price))
 
   # give it a bit for the exchanges to catch up
   time.sleep(0.3)
@@ -87,10 +104,6 @@ def is_worth_transacting(calcs):
   if (amount < 1):
     print("Amount to transact < 1")
     return False
-
-  # if (possible_earnings < MIN_EARNINGS_AMOUNT):
-  #   print("Not worth the exchange")
-  #   return False
 
   if (earnings_per_amount < MIN_EARNINGS_PER_AMOUNT):
     print("Not worth the exchange")
