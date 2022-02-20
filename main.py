@@ -5,6 +5,7 @@ import sys
 
 from Exchanges.SouthXChange import SouthXChange
 from Exchanges.TradeOgre import TradeOgre
+from Exchanges.CoinEx import CoinEx
 from TwilioClient import TwilioClient
 from DBClient import DBClient
 from dotenv import load_dotenv
@@ -32,7 +33,8 @@ db = DBClient()
 
 sx = SouthXChange(market1, market2, twilio)
 to = TradeOgre(market1, market2, twilio)
-exchanges = [to, sx]
+cx = CoinEx(market1, market2, twilio)
+exchanges = [cx]
 
 async def make_money(buy_exchange, sell_exchange, calcs, session):
   amount = calcs["amount"]
