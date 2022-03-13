@@ -20,7 +20,7 @@ class CoinEx:
 
     self.base_url = "https://api.coinex.com/v1/"
     self.book_url = "market/detail"
-    self.balance_url = "balance"
+    self.balance_url = "balance/info"
     self.order_url = "order/limit"
 
     self.market1_balance = None
