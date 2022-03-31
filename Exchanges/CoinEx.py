@@ -4,22 +4,23 @@ import hmac
 import hashlib
 import time
 import sys
+import collections
 
 class CoinEx:
   name = "CoinEx"
 
   def __init__(self, market1, market2, twilio):
     self.api_key = os.getenv("COINEX_API_KEY")
-    self.api_secret = bytes(os.getenv("COINEX_API_SECRET"), "utf-8")
+    self.api_secret = os.getenv("COINEX_API_SECRET")
 
     self.twilio = twilio
 
-    pair = market1 + "/" + market2
+    self.pair = market1 + market2
     self.market1 = market1
     self.market2 = market2
 
     self.base_url = "https://api.coinex.com/v1/"
-    self.book_url = "market/detail"
+    self.book_url = "market/ticker"
     self.balance_url = "balance/info"
     self.order_url = "order/limit"
 
@@ -34,23 +35,11 @@ class CoinEx:
   async def get_balance(self, session):
     tonce = int(time.time()*1000)
     json_data = {
-      "access_id": "E14792A2158D4367B3FCB62DC5A3A9AD",
+      "access_id": self.api_key,
       "tonce": tonce
     }
-    # hash = hmac.new(
-    #   self.api_secret,
-    #   json.dumps(json_data).encode("utf8"),
-    #   hashlib.sha512
-    # ).hexdigest()
-    test = "access_id=E14792A2158D4367B3FCB62DC5A3A9AD&secret_key=862EF3BA2B2E56607F5B57A33E574A0463A75D420459B8C9&tonce=" + str(tonce)
-    testing = [("access_id", "E14792A2158D4367B3FCB62DC5A3A9AD"),("secret_key", "862EF3BA2B2E56607F5B57A33E574A0463A75D420459B8C9"),("tonce", tonce)]
-    ok = {
-      "access_id": "E14792A2158D4367B3FCB62DC5A3A9AD",
-      "secret_key": "862EF3BA2B2E56607F5B57A33E574A0463A75D420459B8C9",
-      "tonce": tonce
-    }
-    hash = hashlib.md5(test.encode("utf8")).hexdigest().upper()
-    # print(ok)
+    auth = "access_id=" + str(self.api_key) + "&tonce=" + str(tonce) + "&secret_key=" + str(self.api_secret)
+    hash = hashlib.md5(auth.encode()).hexdigest().upper()
     headers = {
       "Authorization": hash,
       "Content-Type": "application/json; charset=utf-8",
@@ -59,12 +48,10 @@ class CoinEx:
     }
 
     print("Getting CoinEx balance..." + self.base_url + self.balance_url)
-    async with session.get(self.base_url + self.balance_url, params=testing, headers=headers) as resp:
+    async with session.get(self.base_url + self.balance_url, json=json_data, headers=headers) as resp:
       wallet = await resp.json()
-      print("KEATON AAAAAA")
-      print(wallet)
-      self.market1_balance = wallet["data"][self.market1]["available"]
-      self.market2_balance = wallet["data"][self.market2]["available"]
+      self.market1_balance = float(wallet["data"][self.market1]["available"])
+      self.market2_balance = float(wallet["data"][self.market2]["available"])
 
       print("CoinEx " + self.market1 + " balance is: " + "{:.9f}".format(self.market1_balance))
       print("CoinEx " + self.market2 + " balance is: " + "{:.9f}".format(self.market2_balance))
@@ -76,18 +63,23 @@ class CoinEx:
       await self.get_balance(session)
       pass
 
-    async with session.get(self.base_url + self.book_url) as resp:
+    headers = {
+      "Content-Type": "application/json; charset=utf-8",
+      "Accept": "application/json",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36"
+    }
+    async with session.get(self.base_url + self.book_url, params={ "market": self.pair }, headers=headers) as resp:
       if resp.status != 200:
-        print("SX: da fuk")
-        self.twilio.send_text("SX ERROR: " + str(resp.status))
+        print("CoinEx: da fuk")
+        self.twilio.send_text("CoinEx ERROR: " + str(resp.status))
         print(resp)
 
       book = await resp.json()
 
-      self.current_book_buy_price = float(book["BuyOrders"][0]["Price"])
-      self.current_book_buy_amount = float(book["BuyOrders"][0]["Amount"])
-      self.current_book_sell_price = float(book["SellOrders"][0]["Price"])
-      self.current_book_sell_amount = float(book["SellOrders"][0]["Amount"])
+      self.current_book_buy_price = float(book["data"]["ticker"]["buy"])
+      self.current_book_buy_amount = float(book["data"]["ticker"]["buy_amount"])
+      self.current_book_sell_price = float(book["data"]["ticker"]["sell"])
+      self.current_book_sell_amount = float(book["data"]["ticker"]["sell_amount"])
 
       return {
         "exchange": self,

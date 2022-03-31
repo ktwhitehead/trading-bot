@@ -34,7 +34,7 @@ db = DBClient()
 sx = SouthXChange(market1, market2, twilio)
 to = TradeOgre(market1, market2, twilio)
 cx = CoinEx(market1, market2, twilio)
-exchanges = [cx]
+exchanges = [cx, to]
 
 async def make_money(buy_exchange, sell_exchange, calcs, session):
   amount = calcs["amount"]
@@ -107,6 +107,9 @@ def is_worth_transacting(calcs):
     print("Amount to transact < 1")
     return False
 
+  print(possible_earnings)
+  print(earnings_per_amount)
+
   if (earnings_per_amount < MIN_EARNINGS_PER_AMOUNT):
     print("Not worth the exchange")
     return False
@@ -129,13 +132,15 @@ async def main():
       calcs = determine_transaction_amount(exc1, exc2)
 
       if is_worth_transacting(calcs):
-        await make_money(exc1, exc2, calcs, session)
+        print()
+        # await make_money(exc1, exc2, calcs, session)
 
     if exc2["current_book_sell_price"] < exc1["current_book_buy_price"]:
       calcs = determine_transaction_amount(exc2, exc1)
 
       if is_worth_transacting(calcs):
-        await make_money(exc2, exc1, calcs, session)
+        print()
+        # await make_money(exc2, exc1, calcs, session)
 
     time.sleep(1.3)
 
