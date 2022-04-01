@@ -85,11 +85,11 @@ def determine_transaction_amount(buy_exchange, sell_exchange):
 
   # print("Possible estimated earnings...")
   possible_earnings = (sell_price - buy_price) * amount
-  print("{:.9f}".format(possible_earnings))
+  # print("{:.9f}".format(possible_earnings))
 
   # print("Earnings per amount...")
   earnings_per_amount = possible_earnings / amount
-  print("{:.9f}".format(earnings_per_amount))
+  # print("{:.9f}".format(earnings_per_amount))
 
   if (buy_price * amount) > buy_exchange["exchange"].market2_balance:
     print("OK NOT ENOUGH BALANCE, EXITING")
@@ -107,8 +107,8 @@ def is_worth_transacting(calcs):
     print("Amount to transact < 1")
     return False
 
-  print(possible_earnings)
-  print(earnings_per_amount)
+  # print(possible_earnings)
+  # print(earnings_per_amount)
 
   if (earnings_per_amount < MIN_EARNINGS_PER_AMOUNT):
     # print("Not worth the exchange")
