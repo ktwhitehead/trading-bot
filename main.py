@@ -64,9 +64,9 @@ async def make_money(buy_exchange, sell_exchange, calcs, session):
   return
 
 def determine_transaction_amount(buy_exchange, sell_exchange):
-  print(buy_exchange["exchange"].name + "'s sell price is less than " + sell_exchange["exchange"].name + "'s buy price!")
-  print("Sell Price: " + "{:.9f}".format(buy_exchange["current_book_sell_price"]))
-  print("Buy Price: " + "{:.9f}".format(sell_exchange["current_book_buy_price"]))
+  # print(buy_exchange["exchange"].name + "'s sell price is less than " + sell_exchange["exchange"].name + "'s buy price!")
+  # print("Sell Price: " + "{:.9f}".format(buy_exchange["current_book_sell_price"]))
+  # print("Buy Price: " + "{:.9f}".format(sell_exchange["current_book_buy_price"]))
 
   # Buy the sell on the buy exchange
   buy_amount = buy_exchange["current_book_sell_amount"]
@@ -78,16 +78,16 @@ def determine_transaction_amount(buy_exchange, sell_exchange):
 
   amount = min(buy_amount, sell_amount, MAX_TRANSACT_AMOUNT)
 
-  print("About to transact...")
-  print("Buy Amount: " + str(buy_amount))
-  print("Sell Amount: " + str(sell_amount))
-  print("Amount to transact: " + str(amount))
+  # print("About to transact...")
+  # print("Buy Amount: " + str(buy_amount))
+  # print("Sell Amount: " + str(sell_amount))
+  # print("Amount to transact: " + str(amount))
 
-  print("Possible estimated earnings...")
+  # print("Possible estimated earnings...")
   possible_earnings = (sell_price - buy_price) * amount
   print("{:.9f}".format(possible_earnings))
 
-  print("Earnings per amount...")
+  # print("Earnings per amount...")
   earnings_per_amount = possible_earnings / amount
   print("{:.9f}".format(earnings_per_amount))
 
@@ -111,7 +111,7 @@ def is_worth_transacting(calcs):
   print(earnings_per_amount)
 
   if (earnings_per_amount < MIN_EARNINGS_PER_AMOUNT):
-    print("Not worth the exchange")
+    # print("Not worth the exchange")
     return False
 
   return True
@@ -132,14 +132,14 @@ async def main():
       calcs = determine_transaction_amount(exc1, exc2)
 
       if is_worth_transacting(calcs):
-        print()
+        print("WORTH THE EXCHANGE")
         # await make_money(exc1, exc2, calcs, session)
 
     if exc2["current_book_sell_price"] < exc1["current_book_buy_price"]:
       calcs = determine_transaction_amount(exc2, exc1)
 
       if is_worth_transacting(calcs):
-        print()
+        print("WORTH THE EXCHANGE")
         # await make_money(exc2, exc1, calcs, session)
 
     time.sleep(1.3)
